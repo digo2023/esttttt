@@ -168,9 +168,14 @@ class BrowserLivePolariumClient:
         closed = bool(item.get("closed", not is_live_update))
         if phase == "T":
             closed = False
+        series = self._candles[(str(active_id), size)]
+        # When a newer bar starts, the previous in-progress bar is now confirmed.
+        for previous_ts, previous in list(series.items()):
+            if previous_ts < ts and not previous.closed:
+                previous.closed = True
         candle = Candle(open=op, high=hi, low=lo, close=cl, volume=vol,
                         timestamp=ts, closed=closed)
-        self._candles[(str(active_id), size)][ts] = candle
+        series[ts] = candle
 
     def _register_asset(self, obj):
         aid = obj.get("active_id", obj.get("id"))
