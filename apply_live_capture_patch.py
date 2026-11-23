@@ -47,7 +47,7 @@ if not backup.exists():
     shutil.copy2(cli, backup)
 cli.write_text(source, encoding="utf-8")
 print("PATCH APLICADO — integração mínima, sem substituir o restante do projeto.")
-print("Fonte padrão: candles reais capturados do WebSocket da página Polarium.")
+print("Fonte padrão: candles reais capturados do WebSocket da página Polarium (inclui subdomínios de negociação).")
 print("Dados sintéticos: somente com --stub explícito.")
 print("Ordens: não são enviadas por este adaptador.")
 print("Backup:", backup)
