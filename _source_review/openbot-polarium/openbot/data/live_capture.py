@@ -1,4 +1,4 @@
-"""Live candle feed captured from the authenticated Polarium browser session.
+"""Live candle feed captured from the authenticated Polarium Traderoom browser session.
 
 This adapter deliberately does not open orders and does not fabricate market data.\nIt listens to the trader page's own authenticated WebSocket connection and correlates historical replies to the chart's asset and timeframe.
 It consumes the WebSocket frames produced by the trader page itself.
