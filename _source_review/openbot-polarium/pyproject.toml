@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openbot-polarium"
-version = "2.0.0"
-description = "AI-powered autonomous binary options bot for Polarium with browser login capture, ensemble learning, and premium TUI."
+version = "2.1.0"
+description = "Polarium live market data capture, analysis and signal generation; order execution disabled."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "openbot-polarium" }]
