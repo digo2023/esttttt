@@ -383,7 +383,7 @@ def backtest(
     candles: int = typer.Option(500),
     step: int = typer.Option(1),
     no_llm: bool = typer.Option(True),
-    stub: bool = typer.Option(True),
+    stub: bool = typer.Option(False),
 ):
     """Backtest the ensemble strategy on historical data."""
     yaml_cfg, env_cfg = _load_all()
