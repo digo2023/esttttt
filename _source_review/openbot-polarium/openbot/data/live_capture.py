@@ -248,8 +248,10 @@ class BrowserLivePolariumClient:
     async def get_candles(self, asset, timeframe: Timeframe, count: int = 200, end_time=None) -> List[Candle]:
         tf_seconds = timeframe.seconds
         asset_text = str(asset)
+        normalize = lambda value: "".join(ch for ch in str(value).casefold() if ch.isalnum())
+        requested_name = normalize(asset_text)
         ids = [aid for aid, name in self._id_to_name.items()
-               if name.casefold() == asset_text.casefold()]
+               if normalize(name) == requested_name]
         if asset_text.isdigit():
             ids.append(asset_text)
         found = []
