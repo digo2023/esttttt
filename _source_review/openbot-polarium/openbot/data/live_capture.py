@@ -77,7 +77,7 @@ class BrowserLivePolariumClient:
         if "polarium" not in url.lower() and "quadcode" not in url.lower():
             return
         log.info("WebSocket do trader detectado: %s", url.split("?")[0])
-        ws.on("framereceived", lambda payload: self._schedule_frame(payload))
+        ws.on("framereceived", lambda payload: self._schedule_frame(payload, "received"))\n        ws.on("framesent", lambda payload: self._schedule_frame(payload, "sent"))
 
     def _schedule_frame(self, payload):
         try:
@@ -85,7 +85,7 @@ class BrowserLivePolariumClient:
         except RuntimeError:
             pass
 
-    async def _consume_frame(self, payload):
+    async def _consume_frame(self, payload, direction="received"):
         if isinstance(payload, bytes):
             try:
                 payload = payload.decode("utf-8", "ignore")
@@ -103,11 +103,38 @@ class BrowserLivePolariumClient:
             return
         self._frame_count += 1
         self._last_frame = time.time()
+        request_id = self._find_value(data, "request_id")
+        if direction == "sent":
+            active_id = self._find_value(data, "active_id") or self._find_value(data, "asset_id")
+            size = self._find_value(data, "size")
+            if request_id is not None and active_id is not None:
+                self._request_context[str(request_id)] = {
+                    "active_id": active_id,
+                    **({"size": size} if size is not None else {}),
+                }
+            return
+        inherited = self._request_context.get(str(request_id), {}) if request_id is not None else {}
         # Socket.IO event frames are arrays: [event_name, payload].
         if isinstance(data, list) and len(data) >= 2 and isinstance(data[0], str):
-            self._walk(data[1], {}, data[0])
+            self._walk(data[1], inherited, data[0])
         else:
-            self._walk(data, {}, "live")
+            self._walk(data, inherited, "live")
+
+    @staticmethod
+    def _find_value(obj, wanted):
+        if isinstance(obj, dict):
+            if wanted in obj and obj[wanted] is not None:
+                return obj[wanted]
+            for value in obj.values():
+                found = BrowserLivePolariumClient._find_value(value, wanted)
+                if found is not None:
+                    return found
+        elif isinstance(obj, list):
+            for value in obj:
+                found = BrowserLivePolariumClient._find_value(value, wanted)
+                if found is not None:
+                    return found
+        return None
 
     def _walk(self, obj, inherited, event):
         if isinstance(obj, list):
