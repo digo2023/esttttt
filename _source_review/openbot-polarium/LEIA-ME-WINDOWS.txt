@@ -1,0 +1,60 @@
+OPENBOT POLARIUM 2.1.0 - PACOTE COMPLETO
+========================================
+
+OBJETIVO
+Capturar candles reais disponibilizados pela sala autenticada da Polarium,
+analisar os dados e gerar sinais CALL, PUT ou AGUARDAR.
+
+SEGURANCA
+Esta compilacao e SOMENTE SINAIS. O modulo executor foi bloqueado para nao
+enviar ordens, independentemente das configuracoes. Nao existe promessa de
+taxa de acerto ou lucro.
+
+REQUISITOS
+- Windows 10/11 64 bits
+- Python 3.12 x64 (marcar Add Python to PATH)
+- Internet para instalar dependencias e acessar a Polarium
+
+INSTALACAO
+1. Extraia a pasta completa em um local simples, por exemplo C:\OpenBot-Polarium.
+2. Execute INSTALAR_WINDOWS.bat.
+3. Aguarde a instalacao de dependencias e Chromium.
+4. Execute ABRIR_POLARIUM.bat e escolha Login/captura.
+5. Entre manualmente na sua conta na janela do navegador.
+6. Depois do login, deixe a sala /traderoom aberta e selecione o ativo e timeframe
+   no grafico. O adaptador escuta os WebSockets que a propria pagina utiliza.
+7. Execute o scanner ao vivo.
+
+IMPORTANTE SOBRE DADOS
+O programa nao inventa candles nem usa dados sinteticos por padrao.
+A captura depende dos dados que a pagina Polarium realmente transmite para
+o grafico ativo. Se o ativo/timeframe nao estiver carregado ou a plataforma
+nao transmitir historico, o programa deve informar falta de dados.
+O suporte a todos os ativos nao pode ser presumido sem validar o feed de cada um.
+
+COMANDOS
+openbot login
+openbot scan --assets EURUSD-OTC --timeframes M1,M5 --no-llm
+openbot scan --no-llm
+openbot backtest --no-llm
+openbot status
+openbot --help
+
+BACKTEST
+O backtest usa apenas candles reais disponiveis no cache/feed. Nao use --stub
+quando quiser validar resultados de mercado real.
+
+ARQUIVOS
+- config.yaml: ativos, timeframes e parametros de analise.
+- .env: configuracoes locais (nao compartilhe).
+- polarium_session.json: estado de sessao/cookies (nao compartilhe).
+- logs/: logs e arquivos de sinais/resultados.
+
+PRIVACIDADE
+Nunca envie .env, polarium_session.json, cookies, ssid, senhas ou tokens.
+A sessao e pessoal e deve permanecer somente no seu computador.
+
+LIMITACAO DE VALIDACAO
+A compilacao e os testes automatizados verificam estrutura e sintaxe. A captura
+ao vivo somente pode ser considerada validada depois que voce autenticar na
+Polarium e confirmar candles com horario, ativo e timeframe corretos.
