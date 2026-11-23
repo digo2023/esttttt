@@ -35,6 +35,9 @@ class BrowserLivePolariumClient:
         self._connected = False
         self._last_frame = 0.0
         self._frame_count = 0
+        self._last_subscription_context: Dict[str, object] = {}
+        self._raw_candle_count = 0
+        self._rejected_candles = defaultdict(int)
 
     async def __aenter__(self):
         return self
@@ -121,15 +124,33 @@ class BrowserLivePolariumClient:
         self._last_frame = time.time()
         request_id = self._find_value(data, "request_id")
         if direction == "sent":
-            active_id = self._find_value(data, "active_id") or self._find_value(data, "asset_id")
+            active_id = self._find_value(data, "active_id")
+            if active_id is None:
+                active_id = self._find_value(data, "asset_id")
             size = self._find_value(data, "size")
-            if request_id is not None and active_id is not None:
-                self._request_context[str(request_id)] = {
-                    "active_id": active_id,
-                    **({"size": size} if size is not None else {}),
-                }
+            if size is None:
+                size = self._find_value(data, "timeframe")
+            symbol = (self._find_value(data, "ticker")
+                      or self._find_value(data, "symbol")
+                      or self._find_value(data, "asset_name")
+                      or self._find_value(data, "name"))
+            context = {}
+            if active_id is not None:
+                context["active_id"] = active_id
+            if size is not None:
+                context["size"] = size
+            if symbol is not None and isinstance(symbol, str):
+                context["symbol"] = symbol
+            if context:
+                self._last_subscription_context = dict(context)
+                if request_id is not None:
+                    self._request_context[str(request_id)] = dict(context)
+                if active_id is not None and symbol:
+                    self._id_to_name[str(active_id)] = str(symbol)
             return
         inherited = self._request_context.get(str(request_id), {}) if request_id is not None else {}
+        if not inherited and self._last_subscription_context:
+            inherited = dict(self._last_subscription_context)
         # Socket.IO event frames are arrays: [event_name, payload].
         if isinstance(data, list) and len(data) >= 2 and isinstance(data[0], str):
             self._walk(data[1], inherited, data[0])
@@ -188,15 +209,28 @@ class BrowserLivePolariumClient:
             ("high" in obj or "max" in obj) and ("low" in obj or "min" in obj)
         )
 
+    @staticmethod
+    def _timeframe_seconds(value):
+        if isinstance(value, str):
+            label = value.strip().upper()
+            labels = {"M1": 60, "M5": 300, "M15": 900, "M30": 1800,
+                      "H1": 3600, "1M": 60, "5M": 300, "15M": 900,
+                      "30M": 1800, "1H": 3600}
+            if label in labels:
+                return labels[label]
+        number = int(value)
+        # Quadcode chart interval enum.
+        return {1: 60, 2: 300, 3: 900, 4: 1800, 5: 3600}.get(number, number)
+
     def _store_candle(self, item, ctx, event):
+        self._raw_candle_count += 1
         active_id = item.get("active_id", ctx.get("active_id", ctx.get("asset_id")))
         size = item.get("size", ctx.get("size", ctx.get("timeframe")))
         if active_id is None or size is None:
+            self._rejected_candles["missing_active_id_or_timeframe"] += 1
             return
         try:
-            size = int(size)
-            # Quadcode candle size may be seconds or enum (1=M1, 2=M5...).
-            size = {1: 60, 2: 300, 3: 900, 4: 1800, 5: 3600}.get(size, size)
+            size = self._timeframe_seconds(size)
             ts = item.get("from", item.get("timestamp", item.get("at")))
             ts = int(float(ts))
             if ts > 10**17:
@@ -230,7 +264,7 @@ class BrowserLivePolariumClient:
 
     def _register_asset(self, obj):
         aid = obj.get("active_id", obj.get("id"))
-        name = obj.get("ticker", obj.get("name", obj.get("symbol")))
+        name = obj.get("ticker", obj.get("name", obj.get("symbol", obj.get("asset_name"))))
         if aid is None or not isinstance(name, str) or not name:
             return
         self._id_to_name[str(aid)] = name
@@ -254,6 +288,13 @@ class BrowserLivePolariumClient:
                if normalize(name) == requested_name]
         if asset_text.isdigit():
             ids.append(asset_text)
+        # If the current chart subscription explicitly identified the requested
+        # symbol, use its active_id even when Polarium omits the asset catalogue event.
+        sub_symbol = self._last_subscription_context.get("symbol")
+        sub_id = self._last_subscription_context.get("active_id")
+        if sub_symbol and sub_id is not None and normalize(sub_symbol) == requested_name:
+            self._id_to_name[str(sub_id)] = str(sub_symbol)
+            ids.append(str(sub_id))
         found = []
         for aid in dict.fromkeys(ids):
             found.extend(self._candles.get((aid, tf_seconds), {}).values())
@@ -263,6 +304,18 @@ class BrowserLivePolariumClient:
         # The strategy engine receives completed candles only; live candle stays in cache
         # but is excluded until the next timestamp arrives / source marks it closed.
         closed = [c for c in found if c.closed]
+        if not closed:
+            available = {
+                f"{aid}/{seconds}s": len(series)
+                for (aid, seconds), series in self._candles.items()
+            }
+            log.warning(
+                "Nenhum candle fechado para %s %s. Séries capturadas: %s; "
+                "ativos identificados: %s; assinatura atual: %s; rejeições: %s",
+                asset_text, getattr(timeframe, "value", timeframe),
+                available, self._id_to_name, self._last_subscription_context,
+                dict(self._rejected_candles),
+            )
         return closed[-count:]
 
     async def stream_candles(self, asset, timeframe, handler):
