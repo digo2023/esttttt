@@ -1,7 +1,7 @@
 # openbot-polarium v2.0 configuration
 
 trading:
-  mode: paper                      # paper | real
+  mode: paper                      # signal-only; no orders are sent
   account_type: practice           # practice | real
   initial_balance: 1000
   entry_value: 20
@@ -10,12 +10,12 @@ trading:
   max_trades_per_day: 20
   max_concurrent_trades: 1
   min_payout_pct: 70
-  auto_execute: false              # DANGER: true = real trades
+  auto_execute: false              # locked off in signal-only build
   min_confidence_to_execute: 0.70
 
 martingale:
-  enabled: true
-  max_levels: 2
+  enabled: false
+  max_levels: 0
   multiplier: 2.0
 
 soros:
