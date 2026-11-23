@@ -1,0 +1,58 @@
+name: Build OpenBot Polarium Full Windows Package
+on:
+  push:
+    branches: [main]
+    paths:
+      - "_source_review/openbot-polarium/**"
+      - ".github/workflows/build-openbot-polarium-full.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate Python source
+        run: |
+          python -m compileall -q _source_review/openbot-polarium/openbot
+          python -m py_compile _source_review/openbot-polarium/openbot/cli.py
+          python -m py_compile _source_review/openbot-polarium/openbot/data/live_capture.py
+          python -m py_compile _source_review/openbot-polarium/openbot/execution/executor.py
+      - name: Validate package structure
+        run: |
+          test -f _source_review/openbot-polarium/pyproject.toml
+          test -f _source_review/openbot-polarium/requirements.txt
+          test -f _source_review/openbot-polarium/INSTALAR_WINDOWS.bat
+          test -f _source_review/openbot-polarium/ABRIR_POLARIUM.bat
+          test -f _source_review/openbot-polarium/openbot/data/live_capture.py
+          test -f _source_review/openbot-polarium/openbot/cli.py
+      - name: Build full ZIP
+        run: |
+          mkdir -p dist
+          cd _source_review
+          zip -qr ../dist/OpenBot-Polarium-2.1.0-Windows.zip openbot-polarium
+          cd ..
+          sha256sum dist/OpenBot-Polarium-2.1.0-Windows.zip | tee dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OpenBot-Polarium-2.1.0-Windows
+          path: |
+            dist/OpenBot-Polarium-2.1.0-Windows.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Publish ZIP in repository
+        run: |
+          mkdir -p release
+          cp dist/OpenBot-Polarium-2.1.0-Windows.zip release/
+          cp dist/SHA256SUMS.txt release/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add release/
+          if ! git diff --cached --quiet; then
+            git commit -m "Build complete OpenBot Polarium 2.1.0 Windows package"
+            git push
+          fi
