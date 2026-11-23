@@ -36,6 +36,7 @@ from .core.analyzer import EnsembleAnalyzer
 from .core.apinex_client import APInexClient, APInexError
 from .core.learning import LearningEngine
 from .data.browser_login import BrowserLoginCapture, STATE_FILE
+from .data.live_capture import BrowserLivePolariumClient
 from .data.models import Direction, Signal, Timeframe, TradeMode
 from .data.polarium_client import PolariumClient, StubPolariumClient
 from .execution.bankroll import BankrollConfig, BankrollManager
@@ -102,31 +103,15 @@ def _load_all():
 
 
 def _make_polarium(env_cfg, yaml_cfg, stub=False):
-    if stub or (not env_cfg["polarium_sso_token"] and not env_cfg["polarium_email"]):
+    # Synthetic candles are available only when explicitly requested with --stub.
+    # Normal operation keeps the authenticated Polarium trader page open and
+    # reads its actual WebSocket candle stream; no separate guessed WS endpoint.
+    if stub:
         return StubPolariumClient()
-
-    # Try to load saved browser session
-    cookies = {}
-    sso_token = env_cfg["polarium_sso_token"]
-    if not sso_token:
-        session = BrowserLoginCapture.load_session(STATE_FILE)
-        if session:
-            sso_token = session.get("sso_token")
-            cookies = session.get("cookies", {})
-            env_cfg["polarium_broker_id"] = session.get("broker_id", env_cfg["polarium_broker_id"])
-            console.print("[dim]Using saved browser session[/]")
-
-    return PolariumClient(
-        sso_token=sso_token,
-        email=env_cfg["polarium_email"],
-        password=env_cfg["polarium_password"],
-        broker_id=env_cfg["polarium_broker_id"],
-        wss_url=env_cfg["polarium_wss"] or None,
-        https_url=env_cfg["polarium_https"] or None,
-        account_type=yaml_cfg.get("trading", {}).get("account_type", "practice"),
-        cookies=cookies,
+    return BrowserLivePolariumClient(
+        login_timeout=300,
+        headless=False,
     )
-
 
 def _make_apinex(env_cfg):
     if not env_cfg["apinex_api_key"]:
