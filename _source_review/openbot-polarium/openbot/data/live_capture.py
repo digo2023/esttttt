@@ -160,7 +160,7 @@ class BrowserLivePolariumClient:
             cl = float(item["close"])
             hi = float(item.get("max", item.get("high")))
             lo = float(item.get("min", item.get("low")))
-            vol = float(item.get("volume", item.get("size", 0)) or 0)
+            vol = float(item.get("volume", 0) or 0)
         except (TypeError, ValueError, KeyError):
             return
         phase = str(item.get("phase", ctx.get("phase", ""))).upper()
