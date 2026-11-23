@@ -96,17 +96,18 @@ class BrowserLivePolariumClient:
         raw = payload.strip()
         if raw.startswith("42"):
             raw = raw[2:]
-        # Some broker frames contain a numeric transport prefix before JSON.
-        pos = raw.find("{")
-        if pos > 0:
-            raw = raw[pos:]
         try:
             data = json.loads(raw)
         except Exception:
+            # Ignore heartbeat / non-JSON transport frames.
             return
         self._frame_count += 1
         self._last_frame = time.time()
-        self._walk(data, {}, "live")
+        # Socket.IO event frames are arrays: [event_name, payload].
+        if isinstance(data, list) and len(data) >= 2 and isinstance(data[0], str):
+            self._walk(data[1], {}, data[0])
+        else:
+            self._walk(data, {}, "live")
 
     def _walk(self, obj, inherited, event):
         if isinstance(obj, list):
