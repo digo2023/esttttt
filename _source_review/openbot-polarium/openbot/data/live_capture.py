@@ -30,7 +30,8 @@ class BrowserLivePolariumClient:
         self._playwright = self._browser = self._context = self._page = None
         self._candles: Dict[Tuple[str, int], Dict[int, Candle]] = defaultdict(dict)
         self._assets: Dict[str, Asset] = {}
-        self._id_to_name: Dict[str, str] = {}\n        self._request_context: Dict[str, dict] = {}
+        self._id_to_name: Dict[str, str] = {}
+        self._request_context: Dict[str, dict] = {}
         self._connected = False
         self._last_frame = 0.0
         self._frame_count = 0
