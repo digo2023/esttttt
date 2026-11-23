@@ -1,1 +1,1 @@
-5869f4ad7fc938758d2712975f3e71b969535653780a8b1814d36e00039edf89  dist/OpenBot-Polarium-2.1.0-Windows.zip
+25df954a2c63796d3382c2a585b4fbaa03e0af9214bf543672dcb019baf59ad5  dist/OpenBot-Polarium-2.1.0-Windows.zip
