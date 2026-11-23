@@ -63,53 +63,20 @@ class AutoExecutor:
         return True
 
     async def execute(self, signal: Signal) -> Optional[Trade]:
-        """Open a trade based on the signal."""
-        if not self.should_execute(signal):
+        """Signal-only mode: never opens paper or real orders.
+
+        The application is intentionally restricted to market-data analysis,
+        signal generation and reporting. This guard remains active regardless
+        of config.yaml, .env values, CLI flags or account type.
+        """
+        if signal.direction == Direction.HOLD:
             return None
-
-        stake = self.bankroll.next_stake(self.payout_pct)
-        if stake <= 0:
-            return None
-
-        # Decide if paper or real
-        is_practice = self.mode == TradeMode.PAPER or not self.auto_execute
-
-        trade_id = str(uuid.uuid4())[:8]
-        trade = Trade(
-            id=trade_id,
-            signal=signal,
-            stake=stake,
-            payout_pct=self.payout_pct,
-            gale_level=self.bankroll.gale_level,
-            status=TradeStatus.OPEN,
-            entry_price=signal.entry_price,
-            open_timestamp=int(time.time()),
+        log.info(
+            "SIGNAL ONLY: %s %s %s confidence=%.3f; no order was sent",
+            signal.direction.value, signal.asset, signal.timeframe.value,
+            signal.confidence,
         )
-
-        if not is_practice:
-            # Place real order on Polarium
-            try:
-                result = await self.polarium.place_binary_option(
-                    asset=signal.asset,
-                    direction=signal.direction.value.lower(),
-                    amount=stake,
-                    expiry_seconds=signal.expiry_seconds,
-                    is_practice=False,
-                )
-                if result.get("_error"):
-                    log.error("Order failed: %s", result.get("_error"))
-                    return None
-                log.info("REAL ORDER placed: %s %s %s $%.2f",
-                         trade_id, signal.direction.value, signal.asset, stake)
-            except Exception as e:
-                log.error("Order placement failed: %s", e)
-                return None
-        else:
-            log.info("PAPER ORDER: %s %s %s $%.2f (conf=%.2f)",
-                     trade_id, signal.direction.value, signal.asset, stake, signal.confidence)
-
-        self.open_trades.append(trade)
-        return trade
+        return None
 
     async def settle_trade(self, trade: Trade, exit_price: float) -> None:
         """Settle an open trade when expiry is reached."""
