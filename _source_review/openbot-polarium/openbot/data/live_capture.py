@@ -30,7 +30,7 @@ class BrowserLivePolariumClient:
         self._playwright = self._browser = self._context = self._page = None
         self._candles: Dict[Tuple[str, int], Dict[int, Candle]] = defaultdict(dict)
         self._assets: Dict[str, Asset] = {}
-        self._id_to_name: Dict[str, str] = {}
+        self._id_to_name: Dict[str, str] = {}\n        self._request_context: Dict[str, dict] = {}
         self._connected = False
         self._last_frame = 0.0
         self._frame_count = 0
@@ -77,11 +77,12 @@ class BrowserLivePolariumClient:
         if "polarium" not in url.lower() and "quadcode" not in url.lower():
             return
         log.info("WebSocket do trader detectado: %s", url.split("?")[0])
-        ws.on("framereceived", lambda payload: self._schedule_frame(payload, "received"))\n        ws.on("framesent", lambda payload: self._schedule_frame(payload, "sent"))
+        ws.on("framereceived", lambda payload: self._schedule_frame(payload, "received"))
+        ws.on("framesent", lambda payload: self._schedule_frame(payload, "sent"))
 
-    def _schedule_frame(self, payload):
+    def _schedule_frame(self, payload, direction="received"):
         try:
-            asyncio.get_running_loop().create_task(self._consume_frame(payload))
+            asyncio.get_running_loop().create_task(self._consume_frame(payload, direction))
         except RuntimeError:
             pass
 
