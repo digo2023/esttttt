@@ -567,7 +567,7 @@ def assets(stub: bool = typer.Option(False)):
 
 
 async def _assets_async(stub, yaml_cfg, env_cfg):
-    pc = _make_polarium(env_cfg, yaml_cfg, stub=stub or (not env_cfg["polarium_sso_token"] and not env_cfg["polarium_email"]))
+    pc = _make_polarium(env_cfg, yaml_cfg, stub=stub)
     async with pc:
         await pc.connect()
         assets_list = await pc.get_assets()
