@@ -32,4 +32,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add openbot-polarium-live.zip
           git commit -m 'Package live Polarium candle capture build' || exit 0
-          git push
+          git pull --rebase origin main\n          git push
