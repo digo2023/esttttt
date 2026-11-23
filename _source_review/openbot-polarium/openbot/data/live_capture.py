@@ -20,8 +20,8 @@ log = logging.getLogger(__name__)
 class BrowserLivePolariumClient:
     """Keep the Polarium trader page open and collect its real candle frames."""
 
-    def __init__(self, login_url: str = "https://polarium.com/login",
-                 trader_url: str = "https://polarium.com/trader",
+    def __init__(self, login_url: str = "https://trade.polariumbroker.com/pt/login?redirect_url=traderoom%2F",
+                 trader_url: str = "https://trade.polariumbroker.com/traderoom",
                  headless: bool = False, login_timeout: int = 300):
         self.login_url = login_url
         self.trader_url = trader_url
@@ -59,18 +59,32 @@ class BrowserLivePolariumClient:
         print("\nPOLARIUM — CAPTURA DE CANDLES REAIS")
         print("Entre na conta pelo navegador aberto e deixe o gráfico do ativo desejado carregado.")
         await self._page.goto(self.login_url, wait_until="domcontentloaded")
+        print(f"Login: {self.login_url}")
+        print(f"Sala de negociação: {self.trader_url}")
         try:
             await self._page.wait_for_url(
-                lambda url: any(domain in str(url).lower() for domain in ("polarium", "quadcode")) and "login" not in str(url).lower(),
+                lambda url: "trade.polariumbroker.com" in str(url).lower()
+                and "/traderoom" in str(url).lower(),
                 timeout=self.login_timeout * 1000,
             )
         except Exception:
-            # Do not pretend to be connected: require a real trader page.
-            if "login" in self._page.url.lower():
-                raise RuntimeError("Login Polarium não foi concluído no navegador.")
-        await self._page.wait_for_timeout(3000)
+            if "/login" in self._page.url.lower():
+                raise RuntimeError("Login Polarium não foi concluído. Conclua o login no navegador aberto.")
+        if "/traderoom" not in self._page.url.lower():
+            await self._page.goto(self.trader_url, wait_until="domcontentloaded")
+        await self._page.wait_for_timeout(8000)
         self._connected = True
-        log.info("Captura do navegador ativa; aguardando frames reais de candles.")
+        log.info("Sala de negociação aberta; aguardando frames reais de candles.")
+        deadline = time.monotonic() + 25
+        while time.monotonic() < deadline and not any(self._candles.values()):
+            await self._page.wait_for_timeout(500)
+        candle_count = sum(len(v) for v in self._candles.values())
+        if not candle_count:
+            raise RuntimeError(
+                "A sala abriu, mas nenhum candle foi recebido pelo WebSocket. "
+                "Deixe um gráfico carregado na Polarium e confira se a conexão está ativa."
+            )
+        log.info("Candles recebidos do WebSocket: %d", candle_count)
         return self
 
     def _on_websocket(self, ws):
@@ -181,10 +195,16 @@ class BrowserLivePolariumClient:
             return
         try:
             size = int(size)
+            # Quadcode candle size may be seconds or enum (1=M1, 2=M5...).
+            size = {1: 60, 2: 300, 3: 900, 4: 1800, 5: 3600}.get(size, size)
             ts = item.get("from", item.get("timestamp", item.get("at")))
             ts = int(float(ts))
-            if ts > 10**12:
+            if ts > 10**17:
                 ts //= 10**9
+            elif ts > 10**14:
+                ts //= 10**6
+            elif ts > 10**11:
+                ts //= 10**3
             op = float(item["open"])
             cl = float(item["close"])
             hi = float(item.get("max", item.get("high")))
@@ -194,7 +214,8 @@ class BrowserLivePolariumClient:
             return
         phase = str(item.get("phase", ctx.get("phase", ""))).upper()
         # Polarium's phase T is an in-progress candle. History batches are closed.
-        is_live_update = "candle-generated" in str(event).lower() or phase == "T"
+        event_lower = str(event).lower()
+        is_live_update = ("candle-generated" in event_lower or "candles-generated" in event_lower or phase == "T")
         closed = bool(item.get("closed", not is_live_update))
         if phase == "T":
             closed = False
