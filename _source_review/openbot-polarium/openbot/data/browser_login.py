@@ -25,8 +25,8 @@ from urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
 
-POLARIUM_LOGIN_URL = "https://polarium.com/login"
-POLARIUM_TRADER_URL = "https://polarium.com/trader"
+POLARIUM_LOGIN_URL = "https://trade.polariumbroker.com/pt/login?redirect_url=traderoom%2F"
+POLARIUM_TRADER_URL = "https://trade.polariumbroker.com/traderoom"
 STATE_FILE = "polarium_session.json"
 
 # JS to extract SSO + broker info from various storages
@@ -81,7 +81,7 @@ class BrowserLoginCapture:
     def __init__(
         self,
         login_url: str = POLARIUM_LOGIN_URL,
-        success_url_pattern: str = "polarium.com",
+        success_url_pattern: str = "trade.polariumbroker.com",
         headless: bool = False,
         timeout_sec: int = 300,
     ) -> None:
