@@ -61,7 +61,7 @@ class BrowserLivePolariumClient:
         await self._page.goto(self.login_url, wait_until="domcontentloaded")
         try:
             await self._page.wait_for_url(
-                lambda url: "polarium.com" in str(url).lower() and "login" not in str(url).lower(),
+                lambda url: any(domain in str(url).lower() for domain in ("polarium", "quadcode")) and "login" not in str(url).lower(),
                 timeout=self.login_timeout * 1000,
             )
         except Exception:
