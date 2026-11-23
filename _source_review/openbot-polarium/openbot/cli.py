@@ -103,7 +103,7 @@ def _load_all():
 
 
 def _make_polarium(env_cfg, yaml_cfg, stub=False):
-    # Synthetic candles are available only when explicitly requested with --stub.
+    # Synthetic candles are available only when explicitly requested with --stub.\n    # Normal runs consume the authenticated browser candle feed.
     # Normal operation keeps the authenticated Polarium trader page open and
     # reads its actual WebSocket candle stream; no separate guessed WS endpoint.
     if stub:
