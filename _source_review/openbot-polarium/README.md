@@ -1,8 +1,8 @@
-# openbot-polarium v2.0
+# OpenBot Polarium 2.1.0 — captura real e sinais
 
-Bot autônomo de opções binárias para a Polarium, com login via browser,
+Aplicativo de análise de mercado para a Polarium, com login via browser,
 ensemble de 8 estratégias + 15 indicadores com **pesos aprendidos online**,
-scanner multi-ativo, auto-execução (opt-in), e TUI premium.
+scanner multi-ativo e TUI premium. **Esta distribuição opera somente em modo de sinais; envio de ordens está bloqueado no executor.**
 
 > **Aviso realista:** Nenhum sistema pode prever mercado com precisão garantida.
 > Esta ferramenta é um assistente de decisão que aprende com seus próprios erros.
@@ -18,7 +18,7 @@ scanner multi-ativo, auto-execução (opt-in), e TUI premium.
 | Pesos dos indicadores | Fixos | **Adaptativos** (online learning) |
 | Revalidação após loss | Não | **Sim** (re-pesos top performers) |
 | Scanner | 1 ativo por vez | **Multi-ativo × multi-TF paralelo** |
-| Auto-execução | Não | **Sim** (com opt-in + circuit breaker) |
+| Execução de ordens | Não disponível nesta distribuição | **Bloqueada** (somente sinais) |
 | Self-healing | Retry simples | **Retry + circuit breaker + watchdog + auto-reconnect WS** |
 | UI | Rich CLI | **Textual TUI premium** com painel ao vivo |
 | Stop win/loss | Por % | **Configurável + max trades/dia + max concurrent** |
@@ -119,7 +119,7 @@ indicador. Indicadores com baixa assertividade são automaticamente
 down-weighted; top performers são boostados. Após um loss, top performers
 são revalidados.
 
-### 5. Rodar o dashboard autônomo
+### 5. Rodar o painel de análise
 
 ```bash
 openbot autotrade --stub --no-llm
@@ -127,8 +127,8 @@ openbot autotrade --stub --no-llm
 openbot autotrade --mode real
 ```
 
-Abre o TUI premium com:
-- Header com 7 stat boxes ao vivo (modo, saldo, P&L, win rate, trades abertos, auto-exec, stop)
+Abre o TUI premium de análise com:
+- Painel de sinais, estado da conexão e estatísticas disponíveis
 - Painel esquerdo: status da banca + top indicadores aprendidos + controles
 - Painel direito: tabela de scanner (top 20 sinais) + feed de execução ao vivo
 
@@ -219,3 +219,20 @@ Opções binárias são proibidas em várias jurisdições (EUA, UE para investi
 não profissionais, etc). Verifique a legislação local. Este software é uma
 ferramenta de análise técnica — não constitui aconselhamento financeiro. O
 risco é inteiramente seu.
+
+
+## Distribuição Windows 2.1.0 — somente sinais
+
+Para instalação limpa no Windows 10/11 com Python 3.12:
+1. Extraia o pacote ZIP completo.
+2. Execute `INSTALAR_WINDOWS.bat`.
+3. Execute `ABRIR_POLARIUM.bat`.
+4. Faça login manual na janela Chromium e mantenha o gráfico do ativo/timeframe aberto.
+
+A captura é feita a partir dos WebSockets que a própria sala autenticada transmite.
+Não há geração sintética implícita. A disponibilidade de cada ativo/timeframe
+depende do que a interface da Polarium efetivamente enviar.
+
+**Segurança:** o executor foi alterado para nunca chamar `place_binary_option`.
+Configurações antigas de execução real não reativam envio de ordens. O programa
+serve para capturar dados, analisar, produzir sinais e testar estratégias.
