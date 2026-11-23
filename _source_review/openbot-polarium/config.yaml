@@ -1,0 +1,120 @@
+# openbot-polarium v2.0 configuration
+
+trading:
+  mode: paper                      # paper | real
+  account_type: practice           # practice | real
+  initial_balance: 1000
+  entry_value: 20
+  stop_win_pct: 30
+  stop_loss_pct: 20
+  max_trades_per_day: 20
+  max_concurrent_trades: 1
+  min_payout_pct: 70
+  auto_execute: false              # DANGER: true = real trades
+  min_confidence_to_execute: 0.70
+
+martingale:
+  enabled: true
+  max_levels: 2
+  multiplier: 2.0
+
+soros:
+  enabled: false
+  levels: 1
+
+scanner:
+  assets:
+    - EURUSD-OTC
+    - GBPUSD-OTC
+    - EURGBP-OTC
+    - USDJPY-OTC
+    - BTCUSD
+    - ETHUSD
+  timeframes:
+    - M1
+    - M5
+  interval_sec: 15
+  top_n_signals: 3                 # only execute top N highest-confidence
+  parallel_assets: 3
+
+indicators:
+  # All available indicators (active set selected dynamically by learning engine)
+  rsi: {period: 14, overbought: 70, oversold: 30}
+  macd: {fast: 12, slow: 26, signal: 9}
+  bollinger: {period: 20, std: 2.0}
+  ema: {fast: 9, slow: 21}
+  sma: {fast: 20, slow: 50}
+  stochastic: {k: 14, d: 3}
+  atr: {period: 14}
+  adx: {period: 14, strong_trend: 25}
+  ichimoku: {tenkan: 9, kijun: 26, senkou: 52}
+  parabolic_sar: {step: 0.02, max: 0.2}
+  obv: {}
+  vwap: {}
+  williams_r: {period: 14}
+  cci: {period: 20}
+  pivot_points: {method: standard}
+  fibonacci: {lookback: 50}
+  atr_bands: {period: 14, multiplier: 2.5}
+
+strategies:
+  # All strategies in the ensemble
+  - name: trend_following
+    enabled: true
+    description: EMA cross + ADX filter
+  - name: mean_reversion
+    enabled: true
+    description: RSI extremes + Bollinger bounce
+  - name: breakout
+    enabled: true
+    description: S/R break with volume confirmation
+  - name: momentum
+    enabled: true
+    description: MACD + Stochastic alignment
+  - name: price_action_patterns
+    enabled: true
+    description: Candlestick patterns + S/R context
+  - name: ichimoku_cloud
+    enabled: true
+    description: Tenkan/Kijun cross + cloud color
+  - name: psar_trail
+    enabled: true
+    description: Parabolic SAR flips as trailing stop
+  - name: vwap_mean
+    enabled: true
+    description: VWAP deviation + RSI confirmation
+
+learning:
+  enabled: true
+  window: 50                       # last N trades for weight recalc
+  rate: 0.1                        # weight adjustment step
+  min_weight: 0.05                 # floor for any indicator
+  revalidate_after_loss: true      # reselect top indicators after each loss
+  top_indicators: 8                # keep only top N performing
+  db_path: openbot_state.sqlite
+
+ai:
+  model: gpt-4o-mini
+  temperature: 0.3
+  max_tokens: 600
+  context_candles: 30
+  enabled: true                    # set false to use only classical
+
+self_healing:
+  max_retries: 3
+  retry_backoff_sec: 2
+  ws_reconnect_delay_sec: 5
+  fallback_to_classical: true      # if LLM fails, use classical-only signal
+  restart_on_consecutive_errors: 5
+
+alerts:
+  sound: true
+  bell: true
+  telegram: false
+  min_confidence_for_alert: 0.65
+
+logging:
+  level: INFO
+  log_file: logs/openbot.log
+  signals_csv: logs/signals.csv
+  trades_csv: logs/trades.csv

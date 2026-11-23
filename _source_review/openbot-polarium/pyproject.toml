@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openbot-polarium"
+version = "2.0.0"
+description = "AI-powered autonomous binary options bot for Polarium with browser login capture, ensemble learning, and premium TUI."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "openbot-polarium" }]
+license = { text = "MIT" }
+dependencies = [
+    "playwright>=1.40.0",
+    "rich>=13.7.0",
+    "textual>=0.58.0",
+    "typer>=0.12.3",
+    "httpx>=0.27.0",
+    "websockets>=12.0",
+    "aiohttp>=3.9.5",
+    "numpy>=1.26.0",
+    "pandas>=2.2.0",
+    "pandas-ta>=0.3.14b0",
+    "scipy>=1.11.0",
+    "python-dotenv>=1.0.1",
+    "PyYAML>=6.0.1",
+    "sqlalchemy>=2.0.0",
+    "aiosqlite>=0.19.0",
+    "tenacity>=8.2.3",
+    "async-timeout>=4.0.3",
+    "python-telegram-bot>=21.0",
+]
+
+[project.scripts]
+openbot = "openbot.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["openbot*"]
