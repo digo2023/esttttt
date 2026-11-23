@@ -1,5 +1,5 @@
 """
-openbot-polarium v2.0 CLI
+openbot-polarium v2.1.0 CLI
 
 Commands:
   login       Open browser, capture Polarium session (SSO + cookies)
@@ -48,7 +48,7 @@ from .utils.helpers import env, env_bool, env_float, env_int, load_config, setup
 
 app = typer.Typer(
     name="openbot",
-    help="openbot-polarium v2.0 — AI-powered autonomous binary options bot for Polarium.",
+    help="openbot-polarium v2.1.0 — captura, análise e geração de sinais para Polarium (somente sinais).",
     no_args_is_help=True,
     add_completion=False,
     rich_markup_mode="rich",
